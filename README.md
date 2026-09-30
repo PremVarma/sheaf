@@ -11,6 +11,7 @@
     <a href="https://react.dev"><img alt="React 19" src="https://img.shields.io/badge/React-19-087EA4?logo=react&logoColor=white"></a>
     <a href="https://www.typescriptlang.org"><img alt="TypeScript" src="https://img.shields.io/badge/TypeScript-strict-3178C6?logo=typescript&logoColor=white"></a>
     <a href="LICENSE"><img alt="MIT License" src="https://img.shields.io/badge/license-MIT-1A7A4C"></a>
+    <a href="https://buymeacoffee.com/premvarma"><img alt="Buy Me a Coffee" src="https://img.shields.io/badge/Buy%20me%20a%20coffee-FFDD00?logo=buymeacoffee&logoColor=black"></a>
   </p>
 </div>
 
@@ -251,6 +252,12 @@ untouched parts are identical to the original.
 
 Bug reports and pull requests are welcome. For larger changes, please open an issue first to discuss
 the approach. Before sending a pull request, run `npm test` and `npm run typecheck`.
+
+## Support
+
+Sheaf is free and open source. If it saves you time, you can support its development:
+
+<a href="https://buymeacoffee.com/premvarma"><img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" alt="Buy Me a Coffee" height="42"></a>
 
 ## License
 
