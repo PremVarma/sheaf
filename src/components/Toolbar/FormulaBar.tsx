@@ -37,7 +37,7 @@ export function FormulaBar() {
       <textarea
         ref={inputRef}
         rows={1}
-        className={`h-6 min-w-0 flex-1 resize-none overflow-hidden whitespace-pre rounded-sm border bg-transparent px-1.5 py-[3px] text-[12.5px] leading-4 text-fg outline-none ${
+        className={`h-6 pointer-coarse:h-8 pointer-coarse:py-[7px] min-w-0 flex-1 resize-none overflow-hidden whitespace-pre rounded-sm border bg-transparent px-1.5 py-[3px] text-[12.5px] leading-4 text-fg outline-none ${
           focused ? 'border-accent bg-control' : 'border-transparent'
         } ${isFormula ? 'font-mono text-[12px]' : ''}`}
         value={value}

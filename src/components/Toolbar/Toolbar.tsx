@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useController, usePlatform, useViewer } from '../../state/AppContext';
 import { SearchBar } from '../SearchBar/SearchBar';
 import { shortcutLabel, ToolButton } from '../ui';
@@ -15,13 +16,17 @@ export function Toolbar() {
   const saving = useViewer((s) => s.document.saving);
   const canUndo = useViewer((s) => s.document.canUndo);
   const canRedo = useViewer((s) => s.document.canRedo);
-  // On phones an active search takes the whole row.
-  const compact = useViewer((s) => s.search.query !== '') ? 'max-sm:hidden' : '';
+  const searching = useViewer((s) => s.search.query !== '' || s.replaceOpen);
+  // Phones open search and the formatting bar on demand, on lines of their own;
+  // larger screens always show them.
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [formatOpen, setFormatOpen] = useState(false);
+  const showSearch = searchOpen || searching;
 
   return (
     <header className="shrink-0 border-b border-line bg-toolbar">
-      <div className="flex h-11 items-center gap-1 px-3">
-        <div className={`flex items-center gap-1 ${compact}`}>
+      <div className="flex min-h-11 flex-wrap items-center gap-1 px-3">
+        <div className="flex items-center gap-1">
           <ToolButton icon="newFile" label="New workbook" title={`New workbook (${shortcutLabel('N', isMac)})`} onClick={() => void controller.newWorkbook()} />
           <ToolButton icon="open" label="Open" title={`Open a workbook (${shortcutLabel('O', isMac)})`} className="px-2.5" onClick={() => void controller.openDialog()}>
             <span className="text-[12.5px] max-sm:hidden">Open</span>
@@ -39,13 +44,41 @@ export function Toolbar() {
           <ToolButton icon="redo" label="Redo" title={`Redo (${shortcutLabel('Z', isMac, true)})`} disabled={!canRedo} onClick={() => void controller.redo()} />
           <div className="mx-1 h-5 w-px bg-line" aria-hidden="true" />
         </div>
-        <SearchBar />
-        <div className={`min-w-2 flex-1 ${compact}`} />
+        <SearchBar className={showSearch ? 'max-sm:order-last max-sm:basis-full max-sm:pb-1.5' : 'max-sm:hidden'} />
+        <div className="min-w-2 flex-1" />
         {/* Phones pinch to zoom; the control doesn't fit there. */}
         <div className="flex items-center max-sm:hidden">
           <ZoomControl />
           <div className="mx-1 h-5 w-px bg-line" aria-hidden="true" />
         </div>
+        <ToolButton
+          icon="search"
+          label="Search"
+          active={showSearch}
+          aria-pressed={showSearch}
+          disabled={!hasWorkbook}
+          className="sm:hidden"
+          onClick={() => {
+            if (showSearch) {
+              controller.clearSearch();
+              setSearchOpen(false);
+            } else {
+              setSearchOpen(true);
+              controller.runCommand('edit.find');
+            }
+          }}
+        />
+        <ToolButton
+          label="Formatting"
+          title="Show formatting tools"
+          active={formatOpen}
+          aria-pressed={formatOpen}
+          disabled={!hasWorkbook}
+          className="sm:hidden"
+          onClick={() => setFormatOpen((open) => !open)}
+        >
+          <span className="text-[13px] font-semibold">Aa</span>
+        </ToolButton>
         <ToolButton
           icon="info"
           label="Workbook information"
@@ -53,12 +86,11 @@ export function Toolbar() {
           active={infoOpen}
           aria-pressed={infoOpen}
           disabled={!hasWorkbook}
-          className={compact}
           onClick={() => controller.setInfoOpen(!infoOpen)}
         />
       </div>
-      {hasWorkbook && <FormatBar />}
-      <div className="flex h-8 items-center gap-2 border-t border-line/70 px-3">
+      {hasWorkbook && <FormatBar className={formatOpen ? '' : 'max-sm:hidden'} />}
+      <div className="flex h-8 items-center gap-2 border-t border-line/70 px-3 pointer-coarse:h-10">
         <NameBox />
         <div className="h-4 w-px bg-line" aria-hidden="true" />
         <FormulaBar />

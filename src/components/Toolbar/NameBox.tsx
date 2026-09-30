@@ -45,7 +45,7 @@ export function NameBox() {
     <div className="relative shrink-0">
       <input
         ref={inputRef}
-        className={`h-6 w-24 rounded-md border bg-control px-2 text-[12px] tabular-nums text-fg outline-none placeholder:text-muted focus:border-accent focus:ring-2 focus:ring-accent/25 disabled:opacity-50 ${
+        className={`h-6 w-24 pointer-coarse:h-8 rounded-md border bg-control px-2 text-[12px] tabular-nums text-fg outline-none placeholder:text-muted focus:border-accent focus:ring-2 focus:ring-accent/25 disabled:opacity-50 ${
           error ? 'border-danger ring-2 ring-danger/20' : 'border-control-line'
         }`}
         value={draft ?? address}

@@ -132,7 +132,7 @@ export function SheetTabs() {
     return { to: sheets.length - 1, x: rect ? rect.right - stripLeft + (strip?.scrollLeft ?? 0) : 0 };
   };
 
-  if (!workbook) return <div className="h-8 shrink-0 border-t border-line bg-tabs" />;
+  if (!workbook) return <div className="h-8 shrink-0 border-t border-line bg-tabs pointer-coarse:h-10" />;
 
   const tabMenu = (index: number): MenuItem[] => {
     const sheet = sheets[index];
@@ -154,7 +154,7 @@ export function SheetTabs() {
   };
 
   return (
-    <div className="relative flex h-8 shrink-0 items-stretch border-t border-line bg-tabs">
+    <div className="relative flex h-8 shrink-0 items-stretch border-t border-line bg-tabs pointer-coarse:h-10">
       <div className="flex items-center gap-0.5 px-1.5">
         <ToolButton icon="chevronLeft" label="Scroll sheet tabs left" disabled={!overflow.left} onClick={() => scrollBy(-1)} />
         <ToolButton icon="chevronRight" label="Scroll sheet tabs right" disabled={!overflow.right} onClick={() => scrollBy(1)} />

@@ -118,6 +118,12 @@ body,
   overflow: hidden;
 }
 
+html {
+  /* Touch screens: no double-tap zoom, and no callout menu on long press. */
+  touch-action: manipulation;
+  -webkit-touch-callout: none;
+}
+
 body {
   background: var(--app-bg);
   color: var(--fg);

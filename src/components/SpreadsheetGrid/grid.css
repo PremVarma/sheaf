@@ -17,6 +17,8 @@
   height: 100%;
   overflow: auto;
   overscroll-behavior: none;
+  /* Pinch zooms the grid, not the page. */
+  touch-action: pan-x pan-y;
   background: var(--xv-grid-bg);
   color: var(--xv-grid-fg);
   outline: none;

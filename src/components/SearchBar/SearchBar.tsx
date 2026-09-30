@@ -9,7 +9,7 @@ import { ToolButton } from '../ui';
  * Workbook search: type to highlight matches, Enter / Shift+Enter to step
  * through them, Esc to clear.
  */
-export function SearchBar() {
+export function SearchBar({ className = '' }: { className?: string }) {
   const controller = useController();
   const enabled = useViewer((s) => s.workbook !== null);
   const query = useViewer((s) => s.search.query);
@@ -45,8 +45,8 @@ export function SearchBar() {
   }
 
   return (
-    <div className="flex min-w-0 items-center gap-1 max-sm:flex-1" role="search">
-      <div className="relative flex h-7 w-56 min-w-36 shrink items-center max-sm:w-auto max-sm:min-w-0 max-sm:flex-1 rounded-md border border-control-line bg-control focus-within:border-accent focus-within:ring-2 focus-within:ring-accent/25">
+    <div className={`flex min-w-0 items-center gap-1 max-sm:flex-wrap max-sm:gap-y-1.5 ${className}`} role="search">
+      <div className="relative flex h-7 w-56 min-w-36 shrink items-center max-sm:w-auto max-sm:min-w-0 max-sm:flex-1 pointer-coarse:h-9 rounded-md border border-control-line bg-control focus-within:border-accent focus-within:ring-2 focus-within:ring-accent/25">
         <Icon name="search" size={14} className="pointer-events-none absolute left-2 text-muted" />
         <input
           ref={inputRef}
@@ -142,11 +142,12 @@ export function SearchBar() {
         </ToolButton>
       )}
       {enabled && replaceOpen && (
-        <>
+        // On phones the replace controls get a line of their own.
+        <div className="flex min-w-0 items-center gap-1 max-sm:basis-full">
           <input
             ref={replaceRef}
             type="text"
-            className="h-7 w-36 min-w-24 shrink rounded-md border border-control-line bg-control px-2 text-[12.5px] text-fg outline-none placeholder:text-muted focus:border-accent focus:ring-2 focus:ring-accent/25"
+            className="h-7 w-36 min-w-24 shrink max-sm:w-auto max-sm:flex-1 pointer-coarse:h-9 rounded-md border border-control-line bg-control px-2 text-[12.5px] text-fg outline-none placeholder:text-muted focus:border-accent focus:ring-2 focus:ring-accent/25"
             placeholder="Replace with…"
             value={replacement}
             spellCheck={false}
@@ -167,7 +168,7 @@ export function SearchBar() {
           <button
             type="button"
             disabled={total === 0}
-            className="h-7 shrink-0 rounded-md border border-control-line bg-control px-2.5 text-[12px] text-fg hover:bg-hover disabled:opacity-40"
+            className="h-7 shrink-0 pointer-coarse:h-9 rounded-md border border-control-line bg-control px-2.5 text-[12px] text-fg hover:bg-hover disabled:opacity-40"
             onClick={() => void controller.replaceCurrent(replacement)}
           >
             Replace
@@ -175,12 +176,12 @@ export function SearchBar() {
           <button
             type="button"
             disabled={total === 0}
-            className="h-7 shrink-0 rounded-md border border-control-line bg-control px-2.5 text-[12px] text-fg hover:bg-hover disabled:opacity-40"
+            className="h-7 shrink-0 pointer-coarse:h-9 rounded-md border border-control-line bg-control px-2.5 text-[12px] text-fg hover:bg-hover disabled:opacity-40"
             onClick={() => void controller.replaceAll(replacement)}
           >
             Replace All
           </button>
-        </>
+        </div>
       )}
     </div>
   );

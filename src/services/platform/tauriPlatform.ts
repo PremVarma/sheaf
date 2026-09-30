@@ -4,6 +4,7 @@ import { getCurrentWebview } from '@tauri-apps/api/webview';
 import { getCurrentWindow } from '@tauri-apps/api/window';
 import { readText, writeText } from '@tauri-apps/plugin-clipboard-manager';
 import { message, open, save } from '@tauri-apps/plugin-dialog';
+import { isAndroid, isIOS } from '../../utils/device';
 import { baseName } from '../../utils/format';
 import { WorkbookError, type WorkbookErrorCode } from '../workbook/errors';
 import type { WorkbookSource } from '../workbook/workbookService';
@@ -44,9 +45,6 @@ function sourceFromPath(path: string): WorkbookSource {
 
 export function createTauriPlatform(): Platform {
   const isMac = /Mac/.test(navigator.userAgent);
-  const isAndroid = /Android/.test(navigator.userAgent);
-  // iPadOS reports a Mac user agent; touch support tells them apart.
-  const isIOS = /iPhone|iPad|iPod/.test(navigator.userAgent) || (isMac && navigator.maxTouchPoints > 1);
   const isMobile = isAndroid || isIOS;
 
   return {

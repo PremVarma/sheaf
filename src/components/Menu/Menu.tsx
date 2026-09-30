@@ -196,7 +196,7 @@ export function Menu({ items, placement, onClose, label, ignore, autoFocus = tru
               aria-expanded={isSubmenu ? open : undefined}
               data-index={index}
               tabIndex={-1}
-              className={`flex h-7 w-full shrink-0 items-center gap-2 rounded-md px-2 text-left text-[12.5px] outline-none ${
+              className={`flex h-7 w-full shrink-0 items-center gap-2 rounded-md px-2 text-left text-[12.5px] outline-none pointer-coarse:h-10 pointer-coarse:text-[14px] ${
                 disabled
                   ? 'cursor-default text-muted opacity-50'
                   : `${item.kind !== 'submenu' && item.danger ? 'text-danger' : 'text-fg'} hover:bg-accent hover:text-accent-fg focus:bg-accent focus:text-accent-fg ${open ? 'bg-hover' : ''}`
@@ -223,7 +223,7 @@ export function Menu({ items, placement, onClose, label, ignore, autoFocus = tru
               </span>
               <span className="min-w-0 flex-1 truncate">{item.label}</span>
               {item.kind !== 'submenu' && (item.detail ?? item.shortcut) && (
-                <span className="ml-4 shrink-0 text-[11.5px] opacity-60">{item.detail ?? item.shortcut}</span>
+                <span className={`ml-4 shrink-0 text-[11.5px] opacity-60 ${item.detail ? '' : 'pointer-coarse:hidden'}`}>{item.detail ?? item.shortcut}</span>
               )}
               {isSubmenu && <span className="ml-4 shrink-0 opacity-60">›</span>}
             </button>

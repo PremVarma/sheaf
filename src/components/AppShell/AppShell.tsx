@@ -1,6 +1,8 @@
 import { useEffect } from 'react';
 import { useKeyboardShortcuts } from '../../hooks/useKeyboardShortcuts';
+import { useLongPressMenu } from '../../hooks/useLongPressMenu';
 import { useController, usePlatform, useViewer } from '../../state/AppContext';
+import { isIOS } from '../../utils/device';
 import { EmptyState } from '../EmptyState/EmptyState';
 import { DropOverlay, ErrorDialog, LoadingOverlay, PromptDialog } from '../Overlays/Overlays';
 import { SheetTabs } from '../SheetTabs/SheetTabs';
@@ -23,6 +25,7 @@ export function AppShell() {
   const infoOpen = useViewer((s) => s.infoOpen);
 
   useKeyboardShortcuts(controller, platform.isMac);
+  useLongPressMenu(isIOS);
   useEffect(() => controller.attach(), [controller]);
   useEffect(() => {
     platform.appReady();

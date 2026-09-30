@@ -16,7 +16,7 @@ export function ToolButton({
       aria-label={label}
       title={rest.title ?? label}
       aria-pressed={rest['aria-pressed']}
-      className={`inline-flex h-7 min-w-7 shrink-0 items-center justify-center gap-1.5 rounded-md px-1.5 text-fg transition-colors hover:bg-hover active:bg-pressed disabled:pointer-events-none disabled:opacity-40 ${
+      className={`inline-flex h-7 min-w-7 shrink-0 pointer-coarse:h-9 pointer-coarse:min-w-9 items-center justify-center gap-1.5 rounded-md px-1.5 text-fg transition-colors hover:bg-hover active:bg-pressed disabled:pointer-events-none disabled:opacity-40 ${
         active ? 'bg-accent-soft text-accent' : ''
       } ${className}`}
       {...rest}

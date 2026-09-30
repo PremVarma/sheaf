@@ -65,7 +65,7 @@ function FormatButton({ label, title, icon, active = false, disabled, onClick, c
       disabled={disabled}
       onMouseDown={noFocus}
       onClick={onClick}
-      className={`inline-flex h-7 min-w-7 shrink-0 items-center justify-center rounded-md px-1 text-fg transition-colors hover:bg-hover active:bg-pressed disabled:pointer-events-none disabled:opacity-40 ${
+      className={`inline-flex h-7 min-w-7 shrink-0 pointer-coarse:h-9 pointer-coarse:min-w-9 items-center justify-center rounded-md px-1 text-fg transition-colors hover:bg-hover active:bg-pressed disabled:pointer-events-none disabled:opacity-40 ${
         active ? 'bg-accent-soft text-accent' : ''
       } ${className}`}
     >
@@ -113,7 +113,7 @@ function DropdownButton({
       disabled={disabled}
       onMouseDown={noFocus}
       onClick={() => setOpen((v) => !v)}
-      className={`inline-flex h-7 shrink-0 items-center justify-center gap-0.5 rounded-md text-fg transition-colors hover:bg-hover disabled:pointer-events-none disabled:opacity-40 ${
+      className={`inline-flex h-7 shrink-0 pointer-coarse:h-9 items-center justify-center gap-0.5 rounded-md text-fg transition-colors hover:bg-hover disabled:pointer-events-none disabled:opacity-40 ${
         open ? 'bg-pressed' : ''
       } ${split ? 'w-4 rounded-l-none' : `px-1 ${className}`}`}
     >
@@ -131,7 +131,7 @@ function DropdownButton({
           disabled={disabled}
           onMouseDown={noFocus}
           onClick={split}
-          className={`inline-flex h-7 shrink-0 items-center justify-center rounded-md rounded-r-none px-1 text-fg transition-colors hover:bg-hover disabled:pointer-events-none disabled:opacity-40 ${className}`}
+          className={`inline-flex h-7 shrink-0 pointer-coarse:h-9 items-center justify-center rounded-md rounded-r-none px-1 text-fg transition-colors hover:bg-hover disabled:pointer-events-none disabled:opacity-40 ${className}`}
         >
           {children}
         </button>
@@ -176,7 +176,7 @@ function FontSizeBox({ size, disabled, onSize }: { size: number; disabled: boole
     else setDraft(String(size));
   };
   return (
-    <div ref={ref} className="flex h-7 shrink-0 items-center rounded-md border border-control-line bg-control">
+    <div ref={ref} className="flex h-7 shrink-0 pointer-coarse:h-9 items-center rounded-md border border-control-line bg-control">
       <input
         aria-label="Font size"
         title="Font size"
@@ -226,10 +226,42 @@ function FontSizeBox({ size, disabled, onSize }: { size: number; disabled: boole
   );
 }
 
+/** Whether a horizontally scrolling element has more content to the left or right. */
+function useScrollEdges(ref: React.RefObject<HTMLDivElement | null>): { left: boolean; right: boolean } {
+  const [edges, setEdges] = useState({ left: false, right: false });
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const update = () => {
+      const left = el.scrollLeft > 1;
+      const right = el.scrollLeft + el.clientWidth < el.scrollWidth - 1;
+      setEdges((prev) => (prev.left === left && prev.right === right ? prev : { left, right }));
+    };
+    update();
+    el.addEventListener('scroll', update, { passive: true });
+    const observer = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(update);
+    observer?.observe(el);
+    return () => {
+      el.removeEventListener('scroll', update);
+      observer?.disconnect();
+    };
+  }, [ref]);
+  return edges;
+}
+
+/** Fades the edges that have more content beyond them. */
+function edgeFade({ left, right }: { left: boolean; right: boolean }): React.CSSProperties | undefined {
+  if (!left && !right) return undefined;
+  const mask = `linear-gradient(to right, ${left ? 'transparent' : 'black'}, black 32px, black calc(100% - 32px), ${right ? 'transparent' : 'black'})`;
+  return { maskImage: mask, WebkitMaskImage: mask };
+}
+
 /** Formatting toolbar: font, colors, borders, alignment, merging, number formats, rows/columns and sorting. */
-export function FormatBar() {
+export function FormatBar({ className = '' }: { className?: string }) {
   const controller = useController();
   const { isMac } = usePlatform();
+  const barRef = useRef<HTMLDivElement>(null);
+  const edges = useScrollEdges(barRef);
   const enabled = useViewer((s) => s.workbook?.sheets[s.activeSheet]?.kind === 'worksheet');
   const style: CellStyle = useViewer(activeCellStyle);
   const defaultFont = useViewer((s) => s.workbook?.defaultFont ?? DEFAULT_FONT);
@@ -365,7 +397,17 @@ export function FormatBar() {
   ];
 
   return (
-    <div className="no-scrollbar flex h-9 items-center gap-0.5 overflow-x-auto border-t border-line/70 px-2" role="toolbar" aria-label="Formatting">
+    <div
+      ref={barRef}
+      className={`no-scrollbar flex h-9 items-center gap-0.5 overflow-x-auto border-t border-line/70 px-2 pointer-coarse:h-11 ${className}`}
+      style={edgeFade(edges)}
+      role="toolbar"
+      aria-label="Formatting"
+      onWheel={(event) => {
+        // A mouse wheel scrolls the bar sideways when it doesn't fit.
+        if (event.deltaX === 0 && event.deltaY !== 0) event.currentTarget.scrollLeft += event.deltaY;
+      }}
+    >
       <select
         aria-label="Font"
         title="Font"
@@ -374,7 +416,7 @@ export function FormatBar() {
         onChange={(event) => {
           void controller.setFontName(event.target.value).then(() => controller.focusGrid());
         }}
-        className="h-7 w-[118px] shrink-0 rounded-md border border-control-line bg-control px-1.5 text-[12.5px] text-fg outline-none disabled:opacity-40"
+        className="h-7 w-[118px] shrink-0 pointer-coarse:h-9 rounded-md border border-control-line bg-control px-1.5 text-[12.5px] text-fg outline-none disabled:opacity-40"
       >
         {fonts.map((font) => (
           <option key={font} value={font}>
