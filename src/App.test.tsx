@@ -134,7 +134,7 @@ describe('App', () => {
     expect(dialog.textContent).not.toMatch(/Error:|at |\.ts|\.js/);
     fireEvent.click(within(dialog).getByRole('button', { name: 'OK' }));
     expect(screen.queryByRole('alertdialog')).toBeNull();
-    expect(screen.getByText('Open an Excel file')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Open File' })).toBeInTheDocument();
   });
 
   it('shows workbook information', async () => {
