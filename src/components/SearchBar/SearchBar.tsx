@@ -45,8 +45,8 @@ export function SearchBar() {
   }
 
   return (
-    <div className="flex min-w-0 items-center gap-1" role="search">
-      <div className="relative flex h-7 w-56 min-w-36 shrink items-center rounded-md border border-control-line bg-control focus-within:border-accent focus-within:ring-2 focus-within:ring-accent/25">
+    <div className="flex min-w-0 items-center gap-1 max-sm:flex-1" role="search">
+      <div className="relative flex h-7 w-56 min-w-36 shrink items-center max-sm:w-auto max-sm:min-w-0 max-sm:flex-1 rounded-md border border-control-line bg-control focus-within:border-accent focus-within:ring-2 focus-within:ring-accent/25">
         <Icon name="search" size={14} className="pointer-events-none absolute left-2 text-muted" />
         <input
           ref={inputRef}
@@ -93,7 +93,7 @@ export function SearchBar() {
           </span>
           <ToolButton icon="chevronUp" label="Previous match" title="Previous match (⇧↩)" disabled={total === 0} onClick={() => controller.findNext(-1)} />
           <ToolButton icon="chevronDown" label="Next match" title="Next match (↩)" disabled={total === 0} onClick={() => controller.findNext(1)} />
-          <div className="ml-1 flex h-7 items-center rounded-md border border-control-line p-0.5 text-[11.5px]" role="group" aria-label="Search in">
+          <div className="ml-1 flex h-7 items-center rounded-md border border-control-line p-0.5 text-[11.5px] max-sm:hidden" role="group" aria-label="Search in">
             {(['sheet', 'workbook'] as const).map((value) => (
               <button
                 key={value}
@@ -110,7 +110,7 @@ export function SearchBar() {
             label="Match case"
             active={matchCase}
             aria-pressed={matchCase}
-            className="text-[12px] font-semibold"
+            className="text-[12px] font-semibold max-sm:hidden"
             onClick={() => controller.setSearchOptions({ matchCase: !matchCase })}
           >
             Aa
@@ -119,7 +119,7 @@ export function SearchBar() {
             label="Match entire cell contents"
             active={wholeCell}
             aria-pressed={wholeCell}
-            className="text-[11px] font-semibold"
+            className="text-[11px] font-semibold max-sm:hidden"
             onClick={() => controller.setSearchOptions({ wholeCell: !wholeCell })}
           >
             [ab]

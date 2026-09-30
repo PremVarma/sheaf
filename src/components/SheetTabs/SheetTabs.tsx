@@ -271,7 +271,7 @@ export function SheetTabs() {
       </div>
       <div className="flex-1" />
       {hidden.length > 0 && (
-        <div className="flex items-center px-3 text-[11.5px] text-muted" title="Right-click a tab to unhide sheets">
+        <div className="flex items-center px-3 text-[11.5px] text-muted max-sm:hidden" title="Right-click a tab to unhide sheets">
           {hidden.length} hidden
         </div>
       )}
