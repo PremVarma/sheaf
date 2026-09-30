@@ -1,0 +1,158 @@
+@import 'tailwindcss';
+
+/*
+ * Theme tokens. Tailwind utilities (bg-surface, text-muted, …) resolve to these
+ * variables, so everything follows the system light/dark appearance.
+ */
+@theme inline {
+  --color-app: var(--app-bg);
+  --color-toolbar: var(--toolbar-bg);
+  --color-tabs: var(--tabs-bg);
+  --color-surface: var(--surface);
+  --color-fg: var(--fg);
+  --color-muted: var(--fg-muted);
+  --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
+  --color-control: var(--control-bg);
+  --color-control-line: var(--control-line);
+  --color-hover: var(--hover);
+  --color-pressed: var(--pressed);
+  --color-accent: var(--accent);
+  --color-accent-fg: var(--accent-fg);
+  --color-accent-soft: var(--accent-soft);
+  --color-danger: var(--danger);
+  --color-warning: var(--warning);
+  --font-sans: var(--font-ui);
+}
+
+:root {
+  color-scheme: light dark;
+  --font-ui: -apple-system, BlinkMacSystemFont, 'Segoe UI Variable Text', 'Segoe UI', system-ui, sans-serif;
+  --font-cell: -apple-system, BlinkMacSystemFont, 'Segoe UI Variable Text', 'Segoe UI', system-ui, sans-serif;
+
+  --app-bg: #f4f4f5;
+  --toolbar-bg: #f7f7f8;
+  --tabs-bg: #efeff1;
+  --surface: #ffffff;
+  --fg: #1d1d1f;
+  --fg-muted: #6b6b73;
+  --line: #dcdce1;
+  --line-strong: #c4c4cc;
+  --control-bg: #ffffff;
+  --control-line: #cfcfd6;
+  --hover: rgb(0 0 0 / 0.055);
+  --pressed: rgb(0 0 0 / 0.1);
+  --accent: #1a7a4c;
+  --accent-fg: #ffffff;
+  --accent-soft: #e2f3ea;
+  --danger: #d93025;
+  --warning: #b45309;
+
+  /* Grid */
+  --xv-grid-bg: #ffffff;
+  --xv-grid-fg: #1d1d1f;
+  --xv-grid-line: #e3e4e8;
+  --xv-hdr-bg: #f5f5f7;
+  --xv-hdr-fg: #6b6b73;
+  --xv-hdr-line: #d8d9de;
+  --xv-hdr-line-strong: #b9bac2;
+  --xv-hdr-sel-bg: #dfefe6;
+  --xv-hdr-sel-fg: #145f3b;
+  --xv-accent: #1a7a4c;
+  --xv-accent-fg: #ffffff;
+  --xv-accent-muted: #8fb9a3;
+  --xv-sel-fill: rgb(26 122 76 / 0.1);
+  --xv-match-bg: rgb(255 204 0 / 0.38);
+  --xv-match-current: #e8870e;
+  --xv-match-current-bg: rgb(255 170 0 / 0.28);
+  --xv-freeze-line: #9a9ba3;
+  --xv-border-auto: #1d1d1f;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --app-bg: #1c1c1e;
+    --toolbar-bg: #262628;
+    --tabs-bg: #232325;
+    --surface: #2c2c2e;
+    --fg: #ececf0;
+    --fg-muted: #a0a0a8;
+    --line: #3b3b3f;
+    --line-strong: #4d4d52;
+    --control-bg: #1e1e20;
+    --control-line: #4a4a4f;
+    --hover: rgb(255 255 255 / 0.07);
+    --pressed: rgb(255 255 255 / 0.12);
+    --accent: #3aae70;
+    --accent-fg: #0b1f14;
+    --accent-soft: #1d3a2a;
+    --danger: #ff6b61;
+    --warning: #f0a93c;
+
+    --xv-grid-bg: #1b1b1d;
+    --xv-grid-fg: #e6e6ea;
+    --xv-grid-line: #2f2f33;
+    --xv-hdr-bg: #242427;
+    --xv-hdr-fg: #9d9da6;
+    --xv-hdr-line: #38383c;
+    --xv-hdr-line-strong: #55555b;
+    --xv-hdr-sel-bg: #1f3a2b;
+    --xv-hdr-sel-fg: #7fd9a8;
+    --xv-accent: #3aae70;
+    --xv-accent-fg: #0b1f14;
+    --xv-accent-muted: #3f6e55;
+    --xv-sel-fill: rgb(58 174 112 / 0.18);
+    --xv-match-bg: rgb(255 196 0 / 0.3);
+    --xv-match-current: #ffab2e;
+    --xv-match-current-bg: rgb(255 170 0 / 0.25);
+    --xv-freeze-line: #6c6c73;
+    --xv-border-auto: #c8c8cf;
+  }
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+  overflow: hidden;
+}
+
+body {
+  background: var(--app-bg);
+  color: var(--fg);
+  font-family: var(--font-ui);
+  font-size: 13px;
+  -webkit-font-smoothing: antialiased;
+  /* Desktop app: no text selection or rubber-banding outside inputs. */
+  user-select: none;
+  -webkit-user-select: none;
+  overscroll-behavior: none;
+  cursor: default;
+}
+
+input,
+.select-text {
+  user-select: text;
+  -webkit-user-select: text;
+}
+
+button {
+  cursor: default;
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.xv-scroller:focus-visible {
+  outline: none;
+}
+
+.no-scrollbar {
+  scrollbar-width: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}

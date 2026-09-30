@@ -1,0 +1,356 @@
+/*
+ * Spreadsheet grid. Plain CSS on purpose: these rules apply to thousands of
+ * absolutely positioned elements and sizes come from CSS variables set per zoom.
+ * Colors come from the theme tokens in index.css.
+ */
+
+.xv-grid {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+.xv-scroller {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: auto;
+  overscroll-behavior: none;
+  background: var(--xv-grid-bg);
+  color: var(--xv-grid-fg);
+  outline: none;
+  font-family: var(--font-cell);
+  font-size: var(--xv-font);
+  user-select: none;
+  -webkit-user-select: none;
+  cursor: cell;
+  contain: strict;
+}
+
+.xv-content {
+  position: relative;
+}
+
+/* Sticky bands. overflow: clip (not hidden) keeps sticky descendants working.
+   They sit above everything in the scrolling pane (selection, fill handle…). */
+.xv-top {
+  position: sticky;
+  top: 0;
+  z-index: 12;
+  background: var(--xv-grid-bg);
+}
+.xv-corner {
+  position: sticky;
+  left: 0;
+  top: 0;
+  z-index: 14;
+  overflow: clip;
+  background: var(--xv-grid-bg);
+}
+.xv-left {
+  position: sticky;
+  left: 0;
+  z-index: 11;
+  overflow: clip;
+  background: var(--xv-grid-bg);
+}
+
+/* Headers */
+.xv-colhdr,
+.xv-rowhdr,
+.xv-select-all {
+  position: absolute;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--xv-hdr-bg);
+  color: var(--xv-hdr-fg);
+  font-family: var(--font-ui);
+  font-size: var(--xv-hdr-font);
+  font-variant-numeric: tabular-nums;
+  border-right: 1px solid var(--xv-hdr-line);
+  border-bottom: 1px solid var(--xv-hdr-line);
+  cursor: default;
+  white-space: nowrap;
+  overflow: visible;
+}
+.xv-colhdr {
+  top: 0;
+  height: var(--xv-hdr-h);
+  cursor: s-resize;
+}
+.xv-rowhdr {
+  left: 0;
+  cursor: e-resize;
+}
+.xv-select-all {
+  left: 0;
+  top: 0;
+  z-index: 2;
+  cursor: default;
+}
+.xv-select-all::after {
+  content: '';
+  position: absolute;
+  right: 3px;
+  bottom: 3px;
+  border-style: solid;
+  border-width: 0 0 7px 7px;
+  border-color: transparent transparent var(--xv-hdr-line-strong) transparent;
+}
+.xv-colhdr.is-sel,
+.xv-rowhdr.is-sel {
+  background: var(--xv-hdr-sel-bg);
+  color: var(--xv-hdr-sel-fg);
+  font-weight: 600;
+}
+.xv-colhdr.is-sel {
+  box-shadow: inset 0 -2px 0 var(--xv-accent);
+}
+.xv-rowhdr.is-sel {
+  box-shadow: inset -2px 0 0 var(--xv-accent);
+}
+.xv-colhdr.is-whole,
+.xv-rowhdr.is-whole {
+  background: var(--xv-accent);
+  color: var(--xv-accent-fg);
+  font-weight: 600;
+}
+
+.xv-resize-col {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  right: -4px;
+  width: 8px;
+  z-index: 1;
+  cursor: col-resize;
+}
+.xv-resize-row {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -3px;
+  height: 6px;
+  z-index: 1;
+  cursor: row-resize;
+}
+:root.xv-resizing-col,
+:root.xv-resizing-col * {
+  cursor: col-resize !important;
+}
+:root.xv-resizing-row,
+:root.xv-resizing-row * {
+  cursor: row-resize !important;
+}
+
+/* Gridlines */
+.xv-vline,
+.xv-hline {
+  position: absolute;
+  background: var(--xv-grid-line);
+  pointer-events: none;
+}
+.xv-vline {
+  width: 1px;
+}
+.xv-hline {
+  height: 1px;
+}
+.xv-freeze-h,
+.xv-freeze-v {
+  position: absolute;
+  background: var(--xv-freeze-line);
+  pointer-events: none;
+  z-index: 6;
+}
+.xv-freeze-h {
+  left: 0;
+  height: 1px;
+}
+.xv-freeze-v {
+  width: 1px;
+}
+
+/* Cells */
+.xv-row {
+  position: absolute;
+  left: 0;
+  width: 0;
+}
+.xv-cell {
+  position: absolute;
+  top: 0;
+  bottom: 1px;
+  box-sizing: border-box;
+  display: flex;
+  align-items: flex-end;
+  padding: 0 calc(3px * var(--xv-zoom)) calc(2px * var(--xv-zoom));
+  overflow: hidden;
+  white-space: pre;
+  line-height: 1.2;
+}
+.xv-cell.xv-num {
+  font-variant-numeric: tabular-nums;
+}
+.xv-cell.xv-al {
+  justify-content: flex-start;
+}
+.xv-cell.xv-ac {
+  justify-content: center;
+  text-align: center;
+}
+.xv-cell.xv-ar {
+  justify-content: flex-end;
+  text-align: right;
+}
+.xv-cell.xv-vt {
+  align-items: flex-start;
+  padding-top: calc(2px * var(--xv-zoom));
+}
+.xv-cell.xv-vc {
+  align-items: center;
+  padding-bottom: 0;
+}
+.xv-cell.xv-wrap {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.xv-cell.xv-fill {
+  bottom: 0;
+}
+.xv-cell.xv-ovf {
+  z-index: 1;
+  background: var(--xv-grid-bg);
+}
+.xv-cell.xv-merge {
+  bottom: auto;
+  z-index: 1;
+  background: var(--xv-grid-bg);
+}
+.xv-cell.xv-match {
+  background-image: linear-gradient(var(--xv-match-bg), var(--xv-match-bg));
+}
+.xv-border {
+  position: absolute;
+  top: -1px;
+  bottom: 0;
+  box-sizing: border-box;
+  pointer-events: none;
+  z-index: 2;
+}
+.xv-border.xv-merge-border {
+  bottom: auto;
+}
+
+/* Selection */
+.xv-sel,
+.xv-active,
+.xv-current-match {
+  position: absolute;
+  box-sizing: border-box;
+  pointer-events: none;
+}
+.xv-sel {
+  z-index: 3;
+  background: var(--xv-sel-fill);
+  border: 1px solid var(--xv-accent);
+}
+.xv-sel.no-t {
+  border-top-width: 0;
+}
+.xv-sel.no-b {
+  border-bottom-width: 0;
+}
+.xv-sel.no-l {
+  border-left-width: 0;
+}
+.xv-sel.no-r {
+  border-right-width: 0;
+}
+.xv-current-match {
+  z-index: 3;
+  background: var(--xv-match-current-bg);
+  border: 2px solid var(--xv-match-current);
+}
+.xv-active {
+  z-index: 4;
+  border: 2px solid var(--xv-accent);
+}
+.xv-scroller:not(:focus-within) .xv-active {
+  border-color: var(--xv-accent-muted);
+}
+
+/* Copy outline, fill handle */
+.xv-clip,
+.xv-fill-preview {
+  position: absolute;
+  box-sizing: border-box;
+  pointer-events: none;
+  z-index: 5;
+}
+.xv-clip {
+  border: 2px dashed var(--xv-accent);
+  animation: xv-marching 0.6s linear infinite;
+}
+@keyframes xv-marching {
+  to {
+    border-color: var(--xv-accent-muted);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .xv-clip {
+    animation: none;
+  }
+}
+.xv-fill-preview {
+  border: 1px dashed var(--xv-grid-fg);
+}
+.xv-clip.no-t,
+.xv-fill-preview.no-t {
+  border-top-width: 0;
+}
+.xv-clip.no-b,
+.xv-fill-preview.no-b {
+  border-bottom-width: 0;
+}
+.xv-clip.no-l,
+.xv-fill-preview.no-l {
+  border-left-width: 0;
+}
+.xv-clip.no-r,
+.xv-fill-preview.no-r {
+  border-right-width: 0;
+}
+.xv-fill-handle {
+  position: absolute;
+  z-index: 6;
+  width: 7px;
+  height: 7px;
+  box-sizing: border-box;
+  background: var(--xv-accent);
+  border: 1px solid var(--xv-grid-bg);
+  cursor: crosshair;
+}
+
+/* In-cell editor */
+.xv-editor {
+  position: absolute;
+  z-index: 20;
+  box-sizing: border-box;
+  margin: 0;
+  border: 2px solid var(--xv-accent);
+  border-radius: 0;
+  outline: none;
+  resize: none;
+  overflow: hidden;
+  white-space: pre;
+  background: var(--xv-grid-bg);
+  color: var(--xv-grid-fg);
+  font-family: var(--font-cell);
+  box-shadow: 0 2px 10px rgb(0 0 0 / 0.18);
+  user-select: text;
+  -webkit-user-select: text;
+}
