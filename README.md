@@ -90,9 +90,10 @@ unsupported files are reported with a clear message.
 **Platforms:** macOS 12 Monterey or later (Apple silicon and Intel), and Windows 10 and 11 (x64).
 Windows builds are newer and have had less hands-on testing than the Mac app.
 
-**iOS and Android (early):** Sheaf runs on iPhone, iPad and Android phones and tablets, and opens
-workbooks from the Files app or the system file picker. Saving on mobile isn't supported yet, and the
-interface is still designed mainly for a keyboard and mouse.
+**iOS and Android (early):** Sheaf runs on iPhone, iPad and Android phones and tablets. It opens
+workbooks from the Files app or the system file picker and saves them: on Android wherever you choose,
+on iPhone and iPad in Sheaf's folder in the Files app. On phones, formatting is in the **Aa** panel and
+menu commands in the **⋯** menu; tap a selected cell to edit it, and long-press for more options.
 
 ## Getting started
 
@@ -276,7 +277,8 @@ untouched parts are identical to the original.
 - Formulas that use unsupported functions or syntax (INDIRECT, OFFSET, structured table references,
   array formulas, …) keep their saved value; Excel recalculates them when the file is opened.
 - `.xls` files are saved as `.xlsx`, and duplicated sheets don't copy charts, images, comments or tables.
-- On iOS and Android, workbooks can be opened and edited but not saved yet.
+- On iPhone and iPad, a workbook opened from elsewhere is saved as a copy in Sheaf's folder in the
+  Files app, not back where it came from.
 
 ## Contributing
 
