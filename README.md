@@ -2,11 +2,11 @@
   <img src="src-tauri/icons/128x128@2x.png" width="112" height="112" alt="Sheaf icon">
   <h1>Sheaf</h1>
   <p>
-    <strong>A fast, lightweight spreadsheet app for the Mac.</strong><br>
-    Open, edit and save Excel workbooks and CSV files — no office suite required.
+    <strong>A fast, lightweight spreadsheet app.</strong><br>
+    Open, edit and save Excel workbooks and CSV files on macOS and Windows, with early iOS and Android builds.
   </p>
   <p>
-    <a href="#getting-started"><img alt="macOS 12+" src="https://img.shields.io/badge/macOS-12%2B-111111?logo=apple&logoColor=white"></a>
+    <a href="#supported-files"><img alt="macOS, Windows, iOS, Android" src="https://img.shields.io/badge/platforms-macOS%20%7C%20Windows%20%7C%20iOS%20%7C%20Android-111111"></a>
     <a href="https://v2.tauri.app"><img alt="Tauri 2" src="https://img.shields.io/badge/Tauri-2-24C8D8?logo=tauri&logoColor=white"></a>
     <a href="https://react.dev"><img alt="React 19" src="https://img.shields.io/badge/React-19-087EA4?logo=react&logoColor=white"></a>
     <a href="https://www.typescriptlang.org"><img alt="TypeScript" src="https://img.shields.io/badge/TypeScript-strict-3178C6?logo=typescript&logoColor=white"></a>
@@ -90,6 +90,10 @@ unsupported files are reported with a clear message.
 **Platforms:** macOS 12 Monterey or later (Apple silicon and Intel), and Windows 10 and 11 (x64).
 Windows builds are newer and have had less hands-on testing than the Mac app.
 
+**iOS and Android (early):** Sheaf runs on iPhone, iPad and Android phones and tablets, and opens
+workbooks from the Files app or the system file picker. Saving on mobile isn't supported yet, and the
+interface is still designed mainly for a keyboard and mouse.
+
 ## Getting started
 
 Requirements: [Node.js](https://nodejs.org) 20.19 or later, [Rust](https://rustup.rs) 1.79 or later,
@@ -136,6 +140,22 @@ Run it from the **Actions** tab, or push a `v*` tag.
 
 To build on a Windows PC instead, install the [Tauri prerequisites](https://v2.tauri.app/start/prerequisites/)
 (Microsoft C++ Build Tools and WebView2) and run `npm install` and `npm run app:build`.
+
+### iOS and Android
+
+iOS needs Xcode; Android needs Android Studio with the SDK and NDK (see Tauri's
+[mobile prerequisites](https://v2.tauri.app/start/prerequisites/#configure-for-mobile-targets)).
+The native projects are in `src-tauri/gen/apple` and `src-tauri/gen/android`.
+
+```bash
+rustup target add aarch64-apple-ios aarch64-apple-ios-sim
+npm run tauri ios dev          # run in the iOS Simulator
+```
+
+```bash
+rustup target add aarch64-linux-android armv7-linux-androideabi i686-linux-android x86_64-linux-android
+npm run tauri android dev      # run in an Android emulator
+```
 
 ## Keyboard shortcuts
 
@@ -256,6 +276,7 @@ untouched parts are identical to the original.
 - Formulas that use unsupported functions or syntax (INDIRECT, OFFSET, structured table references,
   array formulas, …) keep their saved value; Excel recalculates them when the file is opened.
 - `.xls` files are saved as `.xlsx`, and duplicated sheets don't copy charts, images, comments or tables.
+- On iOS and Android, workbooks can be opened and edited but not saved yet.
 
 ## Contributing
 
