@@ -23,6 +23,21 @@ export function sourceFromFile(file: File): WorkbookSource {
   };
 }
 
+/** Lets the user pick a workbook with <input type="file">. */
+export function pickWithFileInput(): Promise<WorkbookSource | null> {
+  return new Promise((resolve) => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = WORKBOOK_FILE_EXTENSIONS.map((ext) => `.${ext}`).join(',');
+    input.addEventListener('change', () => {
+      const file = input.files?.[0];
+      resolve(file ? sourceFromFile(file) : null);
+    });
+    input.addEventListener('cancel', () => resolve(null));
+    input.click();
+  });
+}
+
 function hasFiles(event: DragEvent): boolean {
   return Array.from(event.dataTransfer?.types ?? []).includes('Files');
 }
@@ -47,19 +62,7 @@ export function createBrowserPlatform(): Platform {
     kind: 'browser',
     isMac,
 
-    pickWorkbookFile() {
-      return new Promise((resolve) => {
-        const input = document.createElement('input');
-        input.type = 'file';
-        input.accept = WORKBOOK_FILE_EXTENSIONS.map((ext) => `.${ext}`).join(',');
-        input.addEventListener('change', () => {
-          const file = input.files?.[0];
-          resolve(file ? sourceFromFile(file) : null);
-        });
-        input.addEventListener('cancel', () => resolve(null));
-        input.click();
-      });
-    },
+    pickWorkbookFile: pickWithFileInput,
 
     sourceFromPath(path) {
       return {

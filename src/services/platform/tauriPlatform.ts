@@ -7,6 +7,7 @@ import { message, open, save } from '@tauri-apps/plugin-dialog';
 import { baseName } from '../../utils/format';
 import { WorkbookError, type WorkbookErrorCode } from '../workbook/errors';
 import type { WorkbookSource } from '../workbook/workbookService';
+import { pickWithFileInput } from './browserPlatform';
 import { SAVE_TYPE_LABELS, WORKBOOK_FILE_EXTENSIONS, type Platform, type PlatformEvents } from './types';
 
 /** Error payload returned by the `read_workbook_file` Rust command. */
@@ -43,12 +44,19 @@ function sourceFromPath(path: string): WorkbookSource {
 
 export function createTauriPlatform(): Platform {
   const isMac = /Mac/.test(navigator.userAgent);
+  const isAndroid = /Android/.test(navigator.userAgent);
+  // iPadOS reports a Mac user agent; touch support tells them apart.
+  const isIOS = /iPhone|iPad|iPod/.test(navigator.userAgent) || (isMac && navigator.maxTouchPoints > 1);
+  const isMobile = isAndroid || isIOS;
 
   return {
     kind: 'desktop',
     isMac,
 
     async pickWorkbookFile() {
+      // Android's picker returns content:// URIs without the file name; the WebView's
+      // file input resolves both.
+      if (isAndroid) return pickWithFileInput();
       const selected = await open({
         multiple: false,
         directory: false,
@@ -57,13 +65,15 @@ export function createTauriPlatform(): Platform {
           { name: 'All Files', extensions: ['*'] },
         ],
       });
-      return typeof selected === 'string' ? sourceFromPath(selected) : null;
+      if (typeof selected !== 'string') return null;
+      // The iOS picker returns a file:// URL to a copy of the file.
+      return sourceFromPath(selected.startsWith('file://') ? decodeURIComponent(new URL(selected).pathname) : selected);
     },
 
     sourceFromPath,
 
     setWindowTitle(title) {
-      void getCurrentWindow().setTitle(title);
+      if (!isMobile) void getCurrentWindow().setTitle(title);
     },
 
     writeClipboardText: (text) => writeText(text),
@@ -97,7 +107,7 @@ export function createTauriPlatform(): Platform {
     },
 
     appReady() {
-      void getCurrentWindow().show();
+      if (!isMobile) void getCurrentWindow().show();
     },
 
     saveDialog: ({ defaultName, types }) =>

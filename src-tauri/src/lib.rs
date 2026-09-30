@@ -1,16 +1,21 @@
 //! Native shell for Sheaf: file access, the application menu and
 //! OS integration (command-line arguments, Finder "Open With", drag and drop,
 //! unsaved-changes protection). Parsing, editing and rendering happen in the web frontend.
+//! On iOS and Android there is no menu bar or window management; the rest is shared.
 
 use std::io::Write;
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Mutex;
+#[cfg(desktop)]
 use std::time::Duration;
 
 use serde::Serialize;
+#[cfg(desktop)]
 use tauri::menu::{Menu, MenuBuilder, MenuItem, MenuItemBuilder, PredefinedMenuItem, Submenu, SubmenuBuilder};
-use tauri::{AppHandle, Emitter, Manager, Runtime, WindowEvent, Wry};
+use tauri::{AppHandle, Emitter, Manager, Runtime};
+#[cfg(desktop)]
+use tauri::{WindowEvent, Wry};
 
 const SUPPORTED_EXTENSIONS: [&str; 5] = ["xlsx", "xlsm", "xls", "csv", "tsv"];
 /// Formats the app writes (never .xls).
@@ -29,7 +34,9 @@ struct PendingFiles {
 #[derive(Default)]
 struct AppState {
     pending: Mutex<PendingFiles>,
+    #[cfg(desktop)]
     recent: Mutex<Vec<String>>,
+    #[cfg(desktop)]
     recent_menu: Mutex<Option<Submenu<Wry>>>,
     /// The open document has unsaved changes: closing asks the frontend first.
     document_edited: AtomicBool,
@@ -185,6 +192,7 @@ fn take_startup_files(state: tauri::State<'_, AppState>) -> Vec<String> {
 }
 
 /// Rebuilds File ▸ Open Recent from the frontend's list.
+#[cfg(desktop)]
 #[tauri::command]
 fn set_recent_files(app: AppHandle, state: tauri::State<'_, AppState>, paths: Vec<String>) -> Result<(), String> {
     *state.recent.lock().unwrap() = paths.clone();
@@ -193,6 +201,11 @@ fn set_recent_files(app: AppHandle, state: tauri::State<'_, AppState>, paths: Ve
     }
     Ok(())
 }
+
+/// No menu bar on phones and tablets.
+#[cfg(mobile)]
+#[tauri::command]
+fn set_recent_files(_paths: Vec<String>) {}
 
 /// Opens files now if the frontend is listening, otherwise queues them.
 #[cfg_attr(not(any(target_os = "macos", target_os = "ios")), allow(dead_code))]
@@ -205,6 +218,7 @@ fn open_paths<R: Runtime>(app: &AppHandle<R>, paths: Vec<String>) {
     if pending.frontend_ready {
         drop(pending);
         let _ = app.emit("open-files", paths);
+        #[cfg(desktop)]
         if let Some(window) = app.get_webview_window("main") {
             let _ = window.unminimize();
             let _ = window.set_focus();
@@ -215,6 +229,7 @@ fn open_paths<R: Runtime>(app: &AppHandle<R>, paths: Vec<String>) {
 }
 
 /// Spreadsheet paths given on the command line (Windows/Linux "Open with", terminals).
+#[cfg(desktop)]
 fn startup_paths() -> Vec<String> {
     std::env::args_os()
         .skip(1)
@@ -224,6 +239,7 @@ fn startup_paths() -> Vec<String> {
         .collect()
 }
 
+#[cfg(desktop)]
 fn item<R: Runtime>(app: &AppHandle<R>, id: &str, label: &str, accelerator: Option<&str>) -> tauri::Result<MenuItem<R>> {
     let builder = MenuItemBuilder::with_id(id, label);
     match accelerator {
@@ -232,6 +248,7 @@ fn item<R: Runtime>(app: &AppHandle<R>, id: &str, label: &str, accelerator: Opti
     }
 }
 
+#[cfg(desktop)]
 fn fill_recent_menu<R: Runtime>(app: &AppHandle<R>, menu: &Submenu<R>, paths: &[String]) -> tauri::Result<()> {
     for existing in menu.items()? {
         menu.remove(&existing)?;
@@ -254,6 +271,7 @@ fn fill_recent_menu<R: Runtime>(app: &AppHandle<R>, menu: &Submenu<R>, paths: &[
 }
 
 /// Application menu. Item ids are frontend command ids (src/state/commands.ts).
+#[cfg(desktop)]
 fn build_menu<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<(Menu<R>, Submenu<R>)> {
     let recent = SubmenuBuilder::new(app, "Open Recent").build()?;
 
@@ -424,12 +442,18 @@ fn build_menu<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<(Menu<R>, Submenu
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     let state = AppState::default();
-    state.pending.lock().unwrap().paths = startup_paths();
+    #[cfg(desktop)]
+    {
+        state.pending.lock().unwrap().paths = startup_paths();
+    }
 
-    tauri::Builder::default()
+    let builder = tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_clipboard_manager::init())
-        .manage(state)
+        .manage(state);
+
+    #[cfg(desktop)]
+    let builder = builder
         .setup(|app| {
             let handle = app.handle();
             let (menu, recent) = build_menu(handle)?;
@@ -469,7 +493,9 @@ pub fn run() {
                     let _ = window.emit("close-requested", ());
                 }
             }
-        })
+        });
+
+    builder
         .invoke_handler(tauri::generate_handler![
             read_workbook_file,
             write_workbook_file,
