@@ -489,7 +489,11 @@ export function SpreadsheetGrid(props: SpreadsheetGridProps) {
 
   useEffect(() => onWindowPointerUp, [onWindowPointerUp]);
 
+  // Touch: tapping the active cell again edits it (there's no keyboard to start typing with).
+  const touchTapRef = useRef<{ row: number; col: number } | null>(null);
+
   const onPointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
+    touchTapRef.current = null;
     if (event.button !== 0) return;
     const el = scrollerRef.current;
     if (!el) return;
@@ -545,12 +549,23 @@ export function SpreadsheetGrid(props: SpreadsheetGridProps) {
         break;
       }
       case 'cell': {
+        const { focus } = selectionRef.current;
+        const active = anchor.row === focus.row && anchor.col === focus.col && anchor.row === hit.cell.row && anchor.col === hit.cell.col;
+        if (event.pointerType === 'touch' && active) touchTapRef.current = hit.cell;
         const start = event.shiftKey ? anchor : hit.cell;
         onSelectionChange({ anchor: start, focus: hit.cell });
         startDrag({ kind: 'cells', anchor: start }, event);
         break;
       }
     }
+  };
+
+  const onClick = (event: React.MouseEvent<HTMLDivElement>) => {
+    const tapped = touchTapRef.current;
+    touchTapRef.current = null;
+    if (!tapped) return;
+    const hit = hitTest(event.clientX, event.clientY);
+    if (hit?.kind === 'cell' && hit.cell.row === tapped.row && hit.cell.col === tapped.col) propsRef.current.onStartEdit?.('edit');
   };
 
   /** Double-click a column divider to fit its content (all selected columns, like Excel); a row divider fits the row. */
@@ -867,6 +882,7 @@ export function SpreadsheetGrid(props: SpreadsheetGridProps) {
       aria-colcount={sheet.columnCount}
       data-grid-root=""
       onPointerDown={onPointerDown}
+      onClick={onClick}
       onDoubleClick={onDoubleClick}
       onContextMenu={onContextMenu}
       onKeyDown={onKeyDown}

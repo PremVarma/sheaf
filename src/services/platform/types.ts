@@ -19,6 +19,8 @@ export type UnsavedChoice = 'save' | 'discard' | 'cancel';
 export interface Platform {
   readonly kind: 'desktop' | 'browser';
   readonly isMac: boolean;
+  /** Phone or tablet (iOS, Android): no drag and drop, native menus or recent files. */
+  readonly mobile: boolean;
   /** Shows a file picker; resolves null when cancelled. */
   pickWorkbookFile(): Promise<WorkbookSource | null>;
   /** A source for a path on disk (desktop only). */
@@ -32,8 +34,15 @@ export interface Platform {
   setRecentFiles(paths: string[]): void;
   /** Called once the first frame has rendered (desktop shows its window then). */
   appReady(): void;
-  /** Save dialog; resolves the chosen path, or null when cancelled. */
+  /** Save dialog; resolves the chosen path (a content:// URI on Android), or null when cancelled. */
   saveDialog(options: { defaultName: string; types: SaveFileType[] }): Promise<string | null>;
+  /**
+   * Where files are saved when there is no save dialog (iOS: the app's Documents folder,
+   * which the Files app shows). Save As then asks for a name instead.
+   */
+  documentsDir?(): Promise<string>;
+  /** Whether a file exists (used with `documentsDir`). */
+  fileExists?(path: string): Promise<boolean>;
   /** Writes a file atomically (desktop) or downloads it (browser). */
   writeFile(path: string, bytes: Uint8Array): Promise<void>;
   /** Asks what to do with unsaved changes. */

@@ -1,5 +1,6 @@
 import { invoke } from '@tauri-apps/api/core';
 import { listen, type UnlistenFn } from '@tauri-apps/api/event';
+import { documentDir } from '@tauri-apps/api/path';
 import { getCurrentWebview } from '@tauri-apps/api/webview';
 import { getCurrentWindow } from '@tauri-apps/api/window';
 import { readText, writeText } from '@tauri-apps/plugin-clipboard-manager';
@@ -50,6 +51,7 @@ export function createTauriPlatform(): Platform {
   return {
     kind: 'desktop',
     isMac,
+    mobile: isMobile,
 
     async pickWorkbookFile() {
       // Android's picker returns content:// URIs without the file name; the WebView's
@@ -107,6 +109,11 @@ export function createTauriPlatform(): Platform {
     appReady() {
       if (!isMobile) void getCurrentWindow().show();
     },
+
+    // iOS has no save dialog that returns a writable path: files go to the app's Documents
+    // folder, which the Files app shows as "On My iPhone › Sheaf".
+    documentsDir: isIOS ? () => documentDir() : undefined,
+    fileExists: isIOS ? (path) => invoke<boolean>('file_exists', { path }) : undefined,
 
     saveDialog: ({ defaultName, types }) =>
       save({

@@ -65,9 +65,11 @@ export interface CellEditState {
 /** A question or notice shown in a modal dialog. */
 export interface DialogState {
   id: number;
-  kind: 'confirm' | 'alert';
+  kind: 'confirm' | 'alert' | 'prompt';
   title: string;
   message: string;
+  /** Initial text of a prompt's field. */
+  value?: string;
   confirmLabel: string;
   cancelLabel?: string;
   /** The confirm button does something destructive (shown in red). */

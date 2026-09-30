@@ -97,6 +97,7 @@ export function createMockPlatform(): MockPlatform {
   const platform: MockPlatform = {
     kind: 'desktop',
     isMac: true,
+    mobile: false,
     clipboard: [],
     title: '',
     recent: [],

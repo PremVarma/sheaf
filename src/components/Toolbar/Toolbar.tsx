@@ -1,8 +1,11 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { useController, usePlatform, useViewer } from '../../state/AppContext';
+import type { CommandId } from '../../state/commands';
+import { Icon } from '../Icon';
+import { Menu, type MenuItem } from '../Menu/Menu';
 import { SearchBar } from '../SearchBar/SearchBar';
 import { shortcutLabel, ToolButton } from '../ui';
-import { FormatBar } from './FormatBar';
+import { FormatBar, FormatSheet } from './FormatBar';
 import { FormulaBar } from './FormulaBar';
 import { NameBox } from './NameBox';
 import { ZoomControl } from './ZoomControl';
@@ -22,6 +25,26 @@ export function Toolbar() {
   const [searchOpen, setSearchOpen] = useState(false);
   const [formatOpen, setFormatOpen] = useState(false);
   const showSearch = searchOpen || searching;
+  const moreRef = useRef<HTMLDivElement>(null);
+  const [moreOpen, setMoreOpen] = useState(false);
+  const run = (id: CommandId) => () => controller.runCommand(id);
+  // Phones have no menu bar: the commands only found there.
+  const moreItems: MenuItem[] = [
+    { label: 'Save As…', icon: <Icon name="save" size={15} />, onSelect: run('file.saveAs') },
+    { label: 'Close Workbook', icon: <Icon name="close" size={15} />, onSelect: run('file.close') },
+    { kind: 'separator' },
+    { label: 'Freeze Top Row', onSelect: run('view.freezeTopRow') },
+    { label: 'Freeze First Column', onSelect: run('view.freezeFirstColumn') },
+    { label: 'Freeze at Selection', onSelect: run('view.freezeAtSelection') },
+    { label: 'Unfreeze Panes', onSelect: run('view.unfreeze') },
+    { label: 'Show or Hide Gridlines', onSelect: run('view.toggleGridlines') },
+    { kind: 'separator' },
+    { label: 'Zoom In', icon: <Icon name="plus" size={15} />, onSelect: run('view.zoomIn') },
+    { label: 'Zoom Out', icon: <Icon name="minus" size={15} />, onSelect: run('view.zoomOut') },
+    { label: 'Actual Size', onSelect: run('view.zoomReset') },
+    { kind: 'separator' },
+    { label: 'Workbook Information', icon: <Icon name="info" size={15} />, checked: infoOpen, onSelect: run('view.toggleInfo') },
+  ];
 
   return (
     <header className="shrink-0 border-b border-line bg-toolbar">
@@ -86,10 +109,25 @@ export function Toolbar() {
           active={infoOpen}
           aria-pressed={infoOpen}
           disabled={!hasWorkbook}
+          className="max-sm:hidden"
           onClick={() => controller.setInfoOpen(!infoOpen)}
         />
+        <div ref={moreRef} className="sm:hidden">
+          <ToolButton icon="more" label="More" aria-haspopup="menu" aria-expanded={moreOpen} disabled={!hasWorkbook} onClick={() => setMoreOpen((open) => !open)} />
+          {moreOpen && (
+            <Menu
+              label="More"
+              placement={{ anchor: moreRef.current!, side: 'below', align: 'end' }}
+              ignore={[moreRef.current]}
+              autoFocus={false}
+              onClose={() => setMoreOpen(false)}
+              items={moreItems}
+            />
+          )}
+        </div>
       </div>
-      {hasWorkbook && <FormatBar className={formatOpen ? '' : 'max-sm:hidden'} />}
+      {hasWorkbook && <FormatBar className="max-sm:hidden" />}
+      {hasWorkbook && formatOpen && <FormatSheet onClose={() => setFormatOpen(false)} />}
       <div className="flex h-8 items-center gap-2 border-t border-line/70 px-3 pointer-coarse:h-10">
         <NameBox />
         <div className="h-4 w-px bg-line" aria-hidden="true" />

@@ -126,26 +126,64 @@ fn decode_percent(text: &str) -> Option<String> {
 /// Writes a workbook the frontend built. The body is the raw file; the path is in
 /// the `x-path` header (percent-encoded). Written to a temporary file first and
 /// renamed into place, so a failed save never leaves a half-written file.
+/// On Android the destination can be a content:// URI from the save dialog.
 #[tauri::command]
-async fn write_workbook_file(request: tauri::ipc::Request<'_>) -> Result<(), FileError> {
-    let tauri::ipc::InvokeBody::Raw(data) = request.body() else {
-        return Err(FileError::new("READ_FAILED", "Expected raw file contents"));
-    };
-    let path = request
+async fn write_workbook_file(app: AppHandle, request: tauri::ipc::Request<'_>) -> Result<(), FileError> {
+    let data = body_bytes(request.body()).ok_or_else(|| FileError::new("READ_FAILED", "Expected raw file contents"))?;
+    let destination = request
         .headers()
         .get("x-path")
         .and_then(|value| value.to_str().ok())
         .and_then(decode_percent)
-        .map(PathBuf::from)
         .ok_or_else(|| FileError::new("READ_FAILED", "Missing destination path"))?;
+    #[cfg(target_os = "android")]
+    if destination.starts_with("content://") {
+        tauri::async_runtime::spawn_blocking(move || write_content_uri(&app, &destination, &data))
+            .await
+            .map_err(|e| FileError::new("READ_FAILED", e.to_string()))??;
+        return Ok(());
+    }
+    #[cfg(not(target_os = "android"))]
+    let _ = &app;
+    let path = PathBuf::from(destination);
     if !WRITABLE_EXTENSIONS.contains(&extension(&path).as_str()) {
         return Err(FileError::new("UNSUPPORTED_FORMAT", "Only .xlsx, .xlsm, .csv and .tsv can be saved"));
     }
-    let data = data.clone();
     tauri::async_runtime::spawn_blocking(move || write_atomically(&path, &data))
         .await
         .map_err(|e| FileError::new("READ_FAILED", e.to_string()))??;
     Ok(())
+}
+
+/// The file sent to `write_workbook_file`. Android's IPC can't carry a request body, so
+/// there the bytes arrive as a JSON array of numbers.
+fn body_bytes(body: &tauri::ipc::InvokeBody) -> Option<Vec<u8>> {
+    match body {
+        tauri::ipc::InvokeBody::Raw(data) => Some(data.clone()),
+        tauri::ipc::InvokeBody::Json(serde_json::Value::Array(items)) => items
+            .iter()
+            .map(|item| item.as_u64().and_then(|n| u8::try_from(n).ok()))
+            .collect(),
+        _ => None,
+    }
+}
+
+/// Writes a document the user created with Android's save dialog (no rename possible there).
+#[cfg(target_os = "android")]
+fn write_content_uri(app: &AppHandle, uri: &str, data: &[u8]) -> std::io::Result<()> {
+    use tauri_plugin_fs::{FsExt, OpenOptions};
+    let url = tauri::Url::parse(uri).map_err(std::io::Error::other)?;
+    let mut options = OpenOptions::new();
+    options.read(false).write(true).truncate(true);
+    let mut file = app.fs().open(url, options)?;
+    file.write_all(data)?;
+    file.sync_all()
+}
+
+/// Whether a file exists (iOS Save As asks before replacing one).
+#[tauri::command]
+fn file_exists(path: String) -> bool {
+    Path::new(&path).is_file()
 }
 
 /// Writes next to the target, then renames over it (atomic on the same volume).
@@ -451,6 +489,9 @@ pub fn run() {
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_clipboard_manager::init())
         .manage(state);
+    // Writes to documents chosen in Android's save dialog.
+    #[cfg(target_os = "android")]
+    let builder = builder.plugin(tauri_plugin_fs::init());
 
     #[cfg(desktop)]
     let builder = builder
@@ -499,6 +540,7 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             read_workbook_file,
             write_workbook_file,
+            file_exists,
             take_startup_files,
             set_recent_files,
             set_document_edited,
@@ -541,6 +583,15 @@ mod tests {
         assert_eq!(decode_percent("C%3A%5CData%5Cbook.csv").as_deref(), Some("C:\\Data\\book.csv"));
         assert_eq!(decode_percent("%zz"), None);
         assert_eq!(decode_percent("%2"), Some("%2".to_string()));
+    }
+
+    #[test]
+    fn reads_the_file_from_raw_and_json_bodies() {
+        use tauri::ipc::InvokeBody;
+        assert_eq!(body_bytes(&InvokeBody::Raw(vec![80, 75, 3])), Some(vec![80, 75, 3]));
+        assert_eq!(body_bytes(&InvokeBody::Json(serde_json::json!([80, 75, 3]))), Some(vec![80, 75, 3]));
+        assert_eq!(body_bytes(&InvokeBody::Json(serde_json::json!([80, 300]))), None);
+        assert_eq!(body_bytes(&InvokeBody::Json(serde_json::json!({ "path": "x" }))), None);
     }
 
     #[test]

@@ -61,6 +61,7 @@ export function createBrowserPlatform(): Platform {
   return {
     kind: 'browser',
     isMac,
+    mobile: false,
 
     pickWorkbookFile: pickWithFileInput,
 

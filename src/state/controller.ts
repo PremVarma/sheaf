@@ -42,6 +42,9 @@ import {
 
 export const APP_NAME = 'Sheaf';
 
+/** Android documents are addressed by content:// URIs rather than paths. */
+const isContentUri = (path: string) => path.startsWith('content://');
+
 type EditingModule = typeof import('../services/editing');
 export type CommitMove = 'down' | 'up' | 'right' | 'left' | 'none';
 
@@ -192,7 +195,7 @@ export class ViewerController {
   private fileBytes: Uint8Array | null = null;
   private untitledCount = 0;
   private copied: CopiedCells | null = null;
-  private dialogs = new Map<number, (ok: boolean) => void>();
+  private dialogs = new Map<number, (result: { ok: boolean; value?: string }) => void>();
   private nextDialogId = 1;
   /** Saving as CSV was confirmed for this document (it drops formatting and other sheets). */
   private textSaveConfirmed = false;
@@ -224,15 +227,21 @@ export class ViewerController {
   // Dialogs
 
   /** Asks a question in a modal dialog; resolves true when confirmed. */
-  confirm(dialog: Omit<DialogState, 'id' | 'kind'>): Promise<boolean> {
-    return this.showDialog({ ...dialog, kind: 'confirm' });
+  async confirm(dialog: Omit<DialogState, 'id' | 'kind'>): Promise<boolean> {
+    return (await this.showDialog({ ...dialog, kind: 'confirm' })).ok;
   }
 
   async alert(title: string, message: string): Promise<void> {
     await this.showDialog({ title, message, confirmLabel: 'OK', kind: 'alert' });
   }
 
-  private showDialog(dialog: Omit<DialogState, 'id'>): Promise<boolean> {
+  /** Asks for a line of text; resolves null when cancelled or left empty. */
+  async prompt(dialog: Omit<DialogState, 'id' | 'kind'>): Promise<string | null> {
+    const { ok, value } = await this.showDialog({ ...dialog, kind: 'prompt' });
+    return ok && value?.trim() ? value.trim() : null;
+  }
+
+  private showDialog(dialog: Omit<DialogState, 'id'>): Promise<{ ok: boolean; value?: string }> {
     const previous = this.state.dialog;
     if (previous) this.resolveDialog(previous.id, false);
     const id = this.nextDialogId++;
@@ -240,11 +249,11 @@ export class ViewerController {
     return new Promise((resolve) => this.dialogs.set(id, resolve));
   }
 
-  resolveDialog(id: number, ok: boolean): void {
+  resolveDialog(id: number, ok: boolean, value?: string): void {
     const resolve = this.dialogs.get(id);
     this.dialogs.delete(id);
     this.dispatch({ type: 'dialog/close', id });
-    resolve?.(ok);
+    resolve?.({ ok, value });
     if (!this.state.dialog) this.focusGrid();
   }
 
@@ -346,6 +355,8 @@ export class ViewerController {
   }
 
   private setRecentFiles(paths: string[]): void {
+    // Phones and tablets open copies or content URIs; there is nothing to reopen later.
+    if (this.platform.mobile) return;
     this.dispatch({ type: 'recent/set', paths });
     this.platform.setRecentFiles(paths);
   }
@@ -1321,6 +1332,9 @@ export class ViewerController {
     if (this.state.editing) await this.commitEdit('none');
     const format = workbook.format === 'xls' ? null : (workbook.format as SaveFormat);
     if (!filePath || !format || this.platform.kind === 'browser') return this.saveAs();
+    // iOS opens a temporary copy of the picked file: save it into Sheaf's own folder instead.
+    const documents = await this.platform.documentsDir?.();
+    if (documents && !filePath.startsWith(`${documents}/`)) return this.saveAs();
     return this.writeTo(filePath, format);
   }
 
@@ -1330,11 +1344,44 @@ export class ViewerController {
     if (this.state.editing) await this.commitEdit('none');
     const types = this.saveTypes(workbook);
     const stem = workbook.fileName.replace(/\.[^.]+$/, '') || 'Untitled';
-    const path = await this.platform.saveDialog({ defaultName: `${stem}.${types[0]}`, types });
+    const defaultName = `${stem}.${types[0]}`;
+    const documents = await this.platform.documentsDir?.();
+    if (documents) return this.saveToDocuments(documents, defaultName, types);
+    const path = await this.platform.saveDialog({ defaultName, types });
     if (!path) return false;
+    // Android returns a content:// URI for the document the user created; it has no extension.
+    if (isContentUri(path)) return this.writeTo(path, types[0], defaultName);
     const ext = getExtension(path);
     const format = (types as string[]).includes(ext) ? (ext as SaveFormat) : types[0];
     return this.writeTo((types as string[]).includes(ext) ? path : `${path}.${format}`, format);
+  }
+
+  /** Save As without a save dialog (iOS): asks for a name and saves into Sheaf's folder. */
+  private async saveToDocuments(documents: string, defaultName: string, types: SaveFormat[]): Promise<boolean> {
+    const typed = await this.prompt({
+      title: 'Save As',
+      message: 'The workbook is saved in the Sheaf folder of the Files app.',
+      value: defaultName,
+      confirmLabel: 'Save',
+      cancelLabel: 'Cancel',
+    });
+    if (!typed) return false;
+    const name = typed.replace(/[\\/:]/g, '-');
+    const ext = getExtension(name);
+    const format = (types as string[]).includes(ext) ? (ext as SaveFormat) : types[0];
+    const fileName = (types as string[]).includes(ext) ? name : `${name}.${format}`;
+    const path = `${documents}/${fileName}`;
+    if (path !== this.state.filePath && (await this.platform.fileExists?.(path))) {
+      const replace = await this.confirm({
+        title: `Replace “${fileName}”?`,
+        message: 'A file with this name already exists in the Sheaf folder. Replacing it overwrites its contents.',
+        confirmLabel: 'Replace',
+        cancelLabel: 'Cancel',
+        destructive: true,
+      });
+      if (!replace) return false;
+    }
+    return this.writeTo(path, format);
   }
 
   /** CSV keeps only the active sheet's values; say so once before losing formatting or other sheets. */
@@ -1356,12 +1403,13 @@ export class ViewerController {
     return ok;
   }
 
-  private async writeTo(path: string, format: SaveFormat): Promise<boolean> {
+  private async writeTo(path: string, format: SaveFormat, fileName?: string): Promise<boolean> {
     const session = await this.getSession();
     const workbook = this.state.workbook;
     if (!session || !workbook) return false;
     if (!(await this.confirmTextFormat(workbook, format))) return false;
-    const name = baseName(path);
+    // A content URI names nothing readable; keep the name the file was created with.
+    const name = fileName ?? (isContentUri(path) ? workbook.fileName : baseName(path));
     this.dispatch({ type: 'document/set', document: { saving: true } });
     try {
       const bytes = session.buildFile(format, this.state.activeSheet);

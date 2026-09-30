@@ -135,11 +135,25 @@ export function PromptDialog() {
   const dialog = useViewer((s) => s.dialog);
   const confirmRef = useRef<HTMLButtonElement>(null);
   const cancelRef = useRef<HTMLButtonElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [value, setValue] = useState('');
 
   useEffect(() => {
     if (!dialog) return;
-    // Destructive actions start on Cancel so Enter doesn't delete by accident.
-    (dialog.destructive ? cancelRef.current : confirmRef.current)?.focus();
+    if (dialog.kind === 'prompt') {
+      setValue(dialog.value ?? '');
+      // Select the name without its extension, like a Save As dialog.
+      requestAnimationFrame(() => {
+        const input = inputRef.current;
+        if (!input) return;
+        input.focus();
+        const dot = input.value.lastIndexOf('.');
+        input.setSelectionRange(0, dot > 0 ? dot : input.value.length);
+      });
+    } else {
+      // Destructive actions start on Cancel so Enter doesn't delete by accident.
+      (dialog.destructive ? cancelRef.current : confirmRef.current)?.focus();
+    }
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
         event.preventDefault();
@@ -167,8 +181,27 @@ export function PromptDialog() {
         <p id="prompt-message" className="mt-1.5 text-[12.5px] leading-relaxed text-muted">
           {dialog.message}
         </p>
+        {dialog.kind === 'prompt' && (
+          <input
+            ref={inputRef}
+            type="text"
+            aria-label={dialog.title}
+            value={value}
+            spellCheck={false}
+            autoComplete="off"
+            autoCapitalize="off"
+            className="mt-4 h-8 w-full rounded-md border border-control-line bg-control px-2.5 text-[13px] text-fg outline-none focus:border-accent focus:ring-2 focus:ring-accent/25 pointer-coarse:h-10"
+            onChange={(event) => setValue(event.target.value)}
+            onKeyDown={(event) => {
+              if (event.key === 'Enter') {
+                event.preventDefault();
+                controller.resolveDialog(dialog.id, true, value);
+              }
+            }}
+          />
+        )}
         <div className="mt-6 flex justify-end gap-2">
-          {dialog.kind === 'confirm' && (
+          {dialog.kind !== 'alert' && (
             <button
               ref={cancelRef}
               type="button"
@@ -184,7 +217,8 @@ export function PromptDialog() {
             className={`h-7 rounded-md px-4 text-[12.5px] font-medium hover:brightness-110 ${
               dialog.destructive ? 'bg-danger text-white' : 'bg-accent text-accent-fg'
             }`}
-            onClick={() => controller.resolveDialog(dialog.id, true)}
+            disabled={dialog.kind === 'prompt' && !value.trim()}
+            onClick={() => controller.resolveDialog(dialog.id, true, value)}
           >
             {dialog.confirmLabel}
           </button>

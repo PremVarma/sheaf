@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { createContext, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { DEFAULT_FONT, type CellStyle } from '../../models/workbook';
 import { CURRENCY_SYMBOLS, currencyFormat, formatPresets, localCurrency, presetFor } from '../../services/editing/numberFormats';
 import { getCell } from '../../services/workbook/sheetService';
@@ -7,7 +7,7 @@ import { activeCellStyle, FONT_SIZES, type BorderPreset } from '../../state/cont
 import type { ViewerState } from '../../state/viewerState';
 import { Icon, type IconName } from '../Icon';
 import { Menu, Popover, type MenuItem } from '../Menu/Menu';
-import { shortcutLabel } from '../ui';
+import { shortcutLabel, ToolButton } from '../ui';
 import { ColorPalette } from './ColorPicker';
 
 /** Fonts offered in the font list (the workbook's default font is added when missing). */
@@ -39,7 +39,12 @@ function activeNumber(state: ViewerState): number | null {
   return typeof value === 'number' ? value : null;
 }
 
-function Divider() {
+/** The phone format panel shows each group of controls on its own line. */
+const PanelLayout = createContext(false);
+
+/** A `soft` divider keeps its neighbors on the same line of the panel. */
+function Divider({ soft = false }: { soft?: boolean }) {
+  if (useContext(PanelLayout)) return <div className={soft ? 'w-3 shrink-0' : 'basis-full'} aria-hidden="true" />;
   return <div className="mx-1 h-5 w-px shrink-0 bg-line" aria-hidden="true" />;
 }
 
@@ -257,7 +262,7 @@ function edgeFade({ left, right }: { left: boolean; right: boolean }): React.CSS
 }
 
 /** Formatting toolbar: font, colors, borders, alignment, merging, number formats, rows/columns and sorting. */
-export function FormatBar({ className = '' }: { className?: string }) {
+export function FormatBar({ className = '', layout = 'bar' }: { className?: string; layout?: 'bar' | 'panel' }) {
   const controller = useController();
   const { isMac } = usePlatform();
   const barRef = useRef<HTMLDivElement>(null);
@@ -399,15 +404,20 @@ export function FormatBar({ className = '' }: { className?: string }) {
   return (
     <div
       ref={barRef}
-      className={`no-scrollbar flex h-9 items-center gap-0.5 overflow-x-auto border-t border-line/70 px-2 pointer-coarse:h-11 ${className}`}
-      style={edgeFade(edges)}
+      className={
+        layout === 'panel'
+          ? `flex flex-wrap items-center gap-x-1 gap-y-2 px-3 pb-3 ${className}`
+          : `no-scrollbar flex h-9 items-center gap-0.5 overflow-x-auto border-t border-line/70 px-2 pointer-coarse:h-11 ${className}`
+      }
+      style={layout === 'panel' ? undefined : edgeFade(edges)}
       role="toolbar"
       aria-label="Formatting"
       onWheel={(event) => {
         // A mouse wheel scrolls the bar sideways when it doesn't fit.
-        if (event.deltaX === 0 && event.deltaY !== 0) event.currentTarget.scrollLeft += event.deltaY;
+        if (layout === 'bar' && event.deltaX === 0 && event.deltaY !== 0) event.currentTarget.scrollLeft += event.deltaY;
       }}
     >
+      <PanelLayout.Provider value={layout === 'panel'}>
       <select
         aria-label="Font"
         title="Font"
@@ -454,7 +464,7 @@ export function FormatBar({ className = '' }: { className?: string }) {
       >
         <span className="w-4 text-[14px] line-through">S</span>
       </FormatButton>
-      <Divider />
+      <Divider soft />
 
       <DropdownButton
         label="Font color"
@@ -564,10 +574,28 @@ export function FormatBar({ className = '' }: { className?: string }) {
         <Icon name="rowDelete" size={16} />
         <span>Delete</span>
       </DropdownButton>
-      <Divider />
+      <Divider soft />
       <FormatButton label="Sort A to Z" title="Sort A → Z" icon="sortAsc" disabled={disabled} onClick={run(() => controller.sort(true))} />
       <FormatButton label="Sort Z to A" title="Sort Z → A" icon="sortDesc" disabled={disabled} onClick={run(() => controller.sort(false))} />
       <FormatButton label="Clear formatting" title={`Clear formatting (${k('\\')})`} icon="eraser" disabled={disabled} onClick={run(() => controller.clearFormats())} />
+      </PanelLayout.Provider>
+    </div>
+  );
+}
+
+/** Phones: every formatting control in a panel that slides up from the bottom. */
+export function FormatSheet({ onClose }: { onClose(): void }) {
+  return (
+    <div
+      className="fixed inset-x-0 bottom-0 z-40 rounded-t-2xl border-t border-line bg-surface shadow-[0_-8px_30px_rgba(0,0,0,0.12)] sm:hidden"
+      role="dialog"
+      aria-label="Format"
+    >
+      <div className="flex h-12 items-center justify-between pl-4 pr-2">
+        <h2 className="text-[14px] font-semibold text-fg">Format</h2>
+        <ToolButton icon="close" label="Close format panel" onClick={onClose} />
+      </div>
+      <FormatBar layout="panel" />
     </div>
   );
 }
