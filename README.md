@@ -87,8 +87,8 @@ panel (⌥⌘I) shows the file's details.
 Workbooks can be up to 200 MB and text files up to 500 MB. Password-protected, corrupted and
 unsupported files are reported with a clear message.
 
-**Platforms:** macOS 12 Monterey or later, on Apple silicon and Intel. The code is cross-platform and
-Windows installers can be built on Windows, but Windows builds aren't tested yet.
+**Platforms:** macOS 12 Monterey or later (Apple silicon and Intel), and Windows 10 and 11 (x64).
+Windows builds are newer and have had less hands-on testing than the Mac app.
 
 ## Getting started
 
@@ -127,6 +127,15 @@ To open files from the terminal:
 ```bash
 open -a Sheaf report.xlsx
 ```
+
+### Windows
+
+The [Release workflow](.github/workflows/release.yml) builds the Windows installers (`.msi` and
+`-setup.exe`) and a universal macOS `.dmg` on GitHub Actions, and attaches them to a draft release.
+Run it from the **Actions** tab, or push a `v*` tag.
+
+To build on a Windows PC instead, install the [Tauri prerequisites](https://v2.tauri.app/start/prerequisites/)
+(Microsoft C++ Build Tools and WebView2) and run `npm install` and `npm run app:build`.
 
 ## Keyboard shortcuts
 
